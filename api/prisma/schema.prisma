@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Business {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users      User[]
+  products   Product[]
+  categories Category[]
+  customers  Customer[]
+  sales      Sale[]
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  businessId Int
+  name       String
+  phone      String?
+  pin        String
+  role       String   @default("cashier")
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id])
+  sales    Sale[]
+}
+
+model Category {
+  id         Int      @id @default(autoincrement())
+  businessId Int
+  name       String
+  icon       String?
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  business Business  @relation(fields: [businessId], references: [id])
+  products Product[]
+}
+
+model Product {
+  id                Int      @id @default(autoincrement())
+  businessId        Int
+  localId           String?  @unique
+  name              String
+  price             Float
+  cost              Float    @default(0)
+  barcode           String?
+  categoryId        Int?
+  stockQuantity     Int      @default(0)
+  lowStockThreshold Int      @default(5)
+  unitType          String   @default("unit")
+  imageUrl          String?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  business  Business   @relation(fields: [businessId], references: [id])
+  category  Category?  @relation(fields: [categoryId], references: [id])
+  saleItems SaleItem[]
+}
+
+model Customer {
+  id            Int      @id @default(autoincrement())
+  businessId    Int
+  localId       String?  @unique
+  name          String
+  phone         String?
+  notes         String?
+  creditBalance Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  business           Business            @relation(fields: [businessId], references: [id])
+  sales              Sale[]
+  creditTransactions CreditTransaction[]
+}
+
+model Sale {
+  id           Int      @id @default(autoincrement())
+  businessId   Int
+  localId      String?  @unique
+  userId       Int?
+  customerId   Int?
+  subtotal     Float
+  discount     Float    @default(0)
+  discountType String   @default("fixed")
+  tax          Float    @default(0)
+  total        Float
+  status       String   @default("completed")
+  syncStatus   String   @default("synced")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  business  Business   @relation(fields: [businessId], references: [id])
+  user      User?      @relation(fields: [userId], references: [id])
+  customer  Customer?  @relation(fields: [customerId], references: [id])
+  items     SaleItem[]
+  payments  Payment[]
+}
+
+model SaleItem {
+  id          Int    @id @default(autoincrement())
+  saleId      Int
+  productId   Int
+  productName String
+  quantity    Int
+  unitPrice   Float
+  discount    Float  @default(0)
+  subtotal    Float
+
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model Payment {
+  id        Int      @id @default(autoincrement())
+  saleId    Int
+  method    String
+  amount    Float
+  reference String?
+  status    String   @default("completed")
+  createdAt DateTime @default(now())
+
+  sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+}
+
+model CreditTransaction {
+  id           Int      @id @default(autoincrement())
+  customerId   Int
+  amount       Float
+  type         String
+  balanceAfter Float
+  notes        String?
+  syncStatus   String   @default("synced")
+  createdAt    DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id])
+}
+
+model SyncLog {
+  id         Int      @id @default(autoincrement())
+  businessId Int
+  entityType String
+  entityId   Int
+  action     String
+  data       String
+  syncedAt   DateTime @default(now())
+}
