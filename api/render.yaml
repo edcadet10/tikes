@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: tikes-api
+    runtime: node
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        value: file:./data/tikes.db
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NODE_ENV
+        value: production
+    disk:
+      name: data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1

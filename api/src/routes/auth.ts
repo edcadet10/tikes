@@ -16,7 +16,7 @@ router.post('/register', async (req, res) => {
     }
 
     // Create business and owner in transaction
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       const business = await tx.business.create({
         data: { name: businessName, phone }
       })
